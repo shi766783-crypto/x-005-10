@@ -28,6 +28,8 @@ export interface Material {
   unit: string
   minStock: number // 最低库存预警值
   location: string
+  supplier?: string // 常用购买渠道
+  unitPrice?: number // 参考单价（元 / 单位）
   createdAt: number
   updatedAt: number
 }
@@ -111,6 +113,20 @@ export interface ToolGap {
   source: ItemSource
 }
 
+/** 补货清单条目：预警材料 + 建议补货量 + 渠道/参考价等采购信息 */
+export interface RestockItem {
+  id: string
+  name: string
+  category: MaterialCategory
+  unit: string
+  quantity: number // 当前库存
+  minStock: number // 最低预警值
+  restockQty: number // 建议补货量（补到预警值）
+  location: string
+  supplier?: string // 常用购买渠道
+  unitPrice?: number // 参考单价（元 / 单位）
+}
+
 export interface MaterialGap {
   key: string
   name: string
@@ -119,6 +135,8 @@ export interface MaterialGap {
   missingQty: number
   unit: string
   source: ItemSource
+  supplier?: string // 常用购买渠道（材料库材料）
+  unitPrice?: number // 参考单价（元 / 单位，材料库材料）
 }
 
 export interface ProjectGap {

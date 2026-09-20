@@ -4,7 +4,7 @@ import { useDashboard } from '../composables/useDashboard'
 import { useToolStore } from '../stores/useToolStore'
 import { useBorrowStore } from '../stores/useBorrowStore'
 import StatCard from '../components/StatCard.vue'
-import { today, isOverdue } from '../utils/format'
+import { today, isOverdue, formatPrice } from '../utils/format'
 
 const router = useRouter()
 const { stats, unreturnedBorrows, lowStockMaterials } = useDashboard()
@@ -69,14 +69,25 @@ function goReturn(recordId: string) {
           <el-tag v-else type="success">库存充足</el-tag>
         </div>
         <el-table v-if="lowStockMaterials.length" :data="lowStockMaterials" size="small">
-          <el-table-column prop="name" label="材料" min-width="100" />
-          <el-table-column label="当前库存" width="110" align="center">
+          <el-table-column prop="name" label="材料" min-width="90" />
+          <el-table-column label="当前库存" width="100" align="center">
             <template #default="{ row }">
               <span class="gap-missing">{{ row.quantity }} {{ row.unit }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="预警值" width="90" align="center">
-            <template #default="{ row }">{{ row.minStock }} {{ row.unit }}</template>
+          <el-table-column label="需补货" width="90" align="center">
+            <template #default="{ row }">
+              <el-tag type="danger" size="small">{{ row.minStock - row.quantity }} {{ row.unit }}</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="去哪买 / 参考价" min-width="130">
+            <template #default="{ row }">
+              <div v-if="row.supplier || row.unitPrice" class="buy-info">
+                <div v-if="row.supplier">{{ row.supplier }}</div>
+                <div v-if="row.unitPrice" class="muted">{{ formatPrice(row.unitPrice) }}/{{ row.unit }}</div>
+              </div>
+              <span v-else class="muted">未记录</span>
+            </template>
           </el-table-column>
         </el-table>
         <el-empty v-else description="暂无预警材料" :image-size="60" />

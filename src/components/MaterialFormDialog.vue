@@ -20,6 +20,8 @@ const emptyForm = {
   unit: '个',
   minStock: 0,
   location: '',
+  supplier: '',
+  unitPrice: undefined as number | undefined,
 }
 
 const form = reactive({ ...emptyForm })
@@ -32,7 +34,9 @@ const rules: FormRules = {
 watch(
   () => props.modelValue,
   (visible) => {
-    if (visible) Object.assign(form, props.material ?? emptyForm)
+    if (visible) {
+      Object.assign(form, emptyForm, props.material ?? {})
+    }
   },
 )
 
@@ -43,10 +47,14 @@ async function submit() {
   } catch {
     return
   }
+  const price = toNumber(form.unitPrice)
   const payload = {
     ...form,
     quantity: toNumber(form.quantity),
     minStock: toNumber(form.minStock),
+    // 空白/非法价格统一存 undefined，避免脏数据
+    unitPrice: price > 0 ? price : undefined,
+    supplier: form.supplier?.trim() || undefined,
   }
   if (props.material) store.updateMaterial(props.material.id, payload)
   else store.addMaterial(payload)
@@ -84,6 +92,24 @@ async function submit() {
       </el-form-item>
       <el-form-item label="存放位置">
         <el-input v-model="form.location" placeholder="如：储物间 A 区" />
+      </el-form-item>
+      <el-form-item label="购买渠道">
+        <el-select
+          v-model="form.supplier"
+          placeholder="选择或输入常用购买渠道"
+          filterable
+          allow-create
+          default-first-option
+          clearable
+          style="width: 100%"
+        >
+          <el-option v-for="s in store.suppliers.value" :key="s" :label="s" :value="s" />
+        </el-select>
+        <span class="muted">如：家附近五金店 / 淘宝某店，新渠道保存后自动加入常用列表</span>
+      </el-form-item>
+      <el-form-item label="参考单价">
+        <el-input-number v-model="form.unitPrice" :min="0" :precision="2" :step="1" controls-position="right" />
+        <span class="muted" style="margin-left: 8px">元 / {{ form.unit || '单位' }}，补货时估算花费</span>
       </el-form-item>
     </el-form>
     <template #footer>

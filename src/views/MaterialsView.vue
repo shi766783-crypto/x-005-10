@@ -4,11 +4,14 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import type { Material } from '../types'
 import { MATERIAL_CATEGORIES } from '../types'
 import { useMaterialStore } from '../stores/useMaterialStore'
+import { formatPrice, formatAmount } from '../utils/format'
 import MaterialFormDialog from '../components/MaterialFormDialog.vue'
+import SupplierManageDialog from '../components/SupplierManageDialog.vue'
 
 const materialStore = useMaterialStore()
 
 const dialogVisible = ref(false)
+const supplierDialogVisible = ref(false)
 const editingMaterial = ref<Material | null>(null)
 
 const filterCategory = ref('')
@@ -43,34 +46,71 @@ async function remove(material: Material) {
   <div class="page">
     <div class="page-header">
       <h2 class="page-title">材料库存</h2>
-      <el-button type="primary" @click="openAdd">
-        <el-icon><Plus /></el-icon>&nbsp;添加材料
-      </el-button>
+      <div>
+        <el-button @click="supplierDialogVisible = true">
+          <el-icon><Shop /></el-icon>&nbsp;常用渠道
+        </el-button>
+        <el-button type="primary" @click="openAdd">
+          <el-icon><Plus /></el-icon>&nbsp;添加材料
+        </el-button>
+      </div>
     </div>
 
     <section class="card" style="margin-bottom: 16px">
       <div class="section-head">
-        <span class="section-title">库存预警面板</span>
-        <el-tag v-if="materialStore.lowStockMaterials.value.length" type="warning">
-          {{ materialStore.lowStockMaterials.value.length }} 种材料低于最低库存
-        </el-tag>
-        <el-tag v-else type="success">库存健康</el-tag>
+        <span class="section-title">补货清单（库存预警）</span>
+        <div>
+          <template v-if="materialStore.restockList.value.length">
+            <el-tag type="warning">
+              {{ materialStore.restockList.value.length }} 种材料待补货
+            </el-tag>
+            <el-tag type="info" class="cost-tag">
+              {{ materialStore.restockWithSupplierCount.value }} 种已记录渠道
+            </el-tag>
+            <el-tag type="success" class="cost-tag">
+              预计花费 {{ formatAmount(materialStore.restockEstimatedCost.value) }}
+            </el-tag>
+          </template>
+          <el-tag v-else type="success">库存健康</el-tag>
+        </div>
       </div>
-      <el-table v-if="materialStore.lowStockMaterials.value.length" :data="materialStore.lowStockMaterials.value" size="small" border>
-        <el-table-column prop="name" label="材料" min-width="120" />
-        <el-table-column prop="category" label="类别" width="100" />
-        <el-table-column label="当前库存" width="110" align="center">
+      <el-table v-if="materialStore.restockList.value.length" :data="materialStore.restockList.value" size="small" border>
+        <el-table-column prop="name" label="材料" min-width="110" />
+        <el-table-column prop="category" label="类别" width="90" />
+        <el-table-column label="当前库存" width="100" align="center">
           <template #default="{ row }">
             <span class="gap-missing">{{ row.quantity }} {{ row.unit }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="最低预警值" width="110" align="center">
-          <template #default="{ row }">{{ row.minStock }} {{ row.unit }}</template>
-        </el-table-column>
-        <el-table-column prop="location" label="存放位置" min-width="120" />
-        <el-table-column label="建议" min-width="100">
+        <el-table-column label="需补货" width="100" align="center">
           <template #default="{ row }">
-            <el-tag type="danger" size="small">需补货 {{ row.minStock - row.quantity }} {{ row.unit }}</el-tag>
+            <el-tag type="danger" size="small">{{ row.restockQty }} {{ row.unit }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="购买渠道" min-width="130">
+          <template #default="{ row }">
+            <span v-if="row.supplier">{{ row.supplier }}</span>
+            <el-tooltip v-else content="编辑该材料补充常用购买渠道" placement="top">
+              <el-button size="small" link type="primary" @click="openEdit(row)">补录渠道</el-button>
+            </el-tooltip>
+          </template>
+        </el-table-column>
+        <el-table-column label="参考单价" width="100" align="center">
+          <template #default="{ row }">
+            <span v-if="row.unitPrice">{{ formatPrice(row.unitPrice) }}/{{ row.unit }}</span>
+            <span v-else class="muted">—</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="预估花费" width="100" align="center">
+          <template #default="{ row }">
+            <span v-if="row.unitPrice">{{ formatAmount(row.restockQty * row.unitPrice) }}</span>
+            <span v-else class="muted">—</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="location" label="存放位置" min-width="100" />
+        <el-table-column label="操作" width="80" align="center">
+          <template #default="{ row }">
+            <el-button size="small" @click="openEdit(row)">编辑</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -88,19 +128,31 @@ async function remove(material: Material) {
 
     <div class="card">
       <el-table :data="filtered" border>
-        <el-table-column prop="name" label="名称" min-width="130" />
-        <el-table-column prop="category" label="类别" width="100" />
-        <el-table-column label="数量" width="110" align="center">
+        <el-table-column prop="name" label="名称" min-width="120" />
+        <el-table-column prop="category" label="类别" width="90" />
+        <el-table-column label="数量" width="100" align="center">
           <template #default="{ row }">
             <span :style="{ color: row.quantity < row.minStock ? 'var(--danger)' : 'inherit', fontWeight: row.quantity < row.minStock ? 600 : 400 }">
               {{ row.quantity }} {{ row.unit }}
             </span>
           </template>
         </el-table-column>
-        <el-table-column label="最低预警值" width="110" align="center">
+        <el-table-column label="最低预警值" width="100" align="center">
           <template #default="{ row }">{{ row.minStock }} {{ row.unit }}</template>
         </el-table-column>
-        <el-table-column prop="location" label="存放位置" min-width="120" />
+        <el-table-column label="购买渠道" min-width="130">
+          <template #default="{ row }">
+            <span v-if="row.supplier">{{ row.supplier }}</span>
+            <span v-else class="muted">未记录</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="参考单价" width="110" align="center">
+          <template #default="{ row }">
+            <span v-if="row.unitPrice">{{ formatPrice(row.unitPrice) }}/{{ row.unit }}</span>
+            <span v-else class="muted">—</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="location" label="存放位置" min-width="110" />
         <el-table-column label="操作" width="140" align="center">
           <template #default="{ row }">
             <el-button size="small" @click="openEdit(row)">编辑</el-button>
@@ -111,6 +163,7 @@ async function remove(material: Material) {
     </div>
 
     <MaterialFormDialog v-model="dialogVisible" :material="editingMaterial" />
+    <SupplierManageDialog v-model="supplierDialogVisible" />
   </div>
 </template>
 
@@ -127,9 +180,14 @@ async function remove(material: Material) {
   align-items: center;
   justify-content: space-between;
   margin-bottom: 12px;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 .section-title {
   font-weight: 600;
   font-size: 15px;
+}
+.cost-tag {
+  margin-left: 8px;
 }
 </style>

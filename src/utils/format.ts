@@ -4,6 +4,25 @@ export function toNumber(v: unknown): number {
   return Number.isFinite(n) ? n : 0
 }
 
+/** 参考单价展示：空/非法值显示占位符，最多保留两位小数 */
+export function formatPrice(v: unknown): string {
+  const n = typeof v === 'number' ? v : Number(v)
+  if (!Number.isFinite(n) || n <= 0) return '—'
+  return `¥${trimNumber(n)}`
+}
+
+/** 金额展示：无有效单价时显示占位符 */
+export function formatAmount(v: unknown): string {
+  const n = typeof v === 'number' ? v : Number(v)
+  if (!Number.isFinite(n) || n <= 0) return '—'
+  return `约 ¥${trimNumber(n)}`
+}
+
+/** 去掉数值末尾多余的 0（最多两位小数） */
+function trimNumber(n: number): string {
+  return n.toFixed(2).replace(/\.?0+$/, '')
+}
+
 /** 时间戳 → YYYY-MM-DD */
 export function formatDate(ts: number): string {
   const d = new Date(ts)

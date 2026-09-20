@@ -87,9 +87,15 @@ export function useProjectStore() {
     const materialGaps: MaterialGap[] = project.materials
       .map((item: ProjectMaterialItem) => {
         let available = 0
+        let supplier: string | undefined
+        let unitPrice: number | undefined
         if (item.source === 'library' && item.materialId) {
           const material = materialStore.getMaterial(item.materialId)
-          if (material) available = toNumber(material.quantity)
+          if (material) {
+            available = toNumber(material.quantity)
+            supplier = material.supplier
+            unitPrice = material.unitPrice
+          }
         }
         const required = toNumber(item.requiredQty)
         return {
@@ -100,6 +106,8 @@ export function useProjectStore() {
           missingQty: Math.max(0, required - available),
           unit: item.unit,
           source: item.source,
+          supplier,
+          unitPrice,
         }
       })
       .filter((g) => g.missingQty > 0)

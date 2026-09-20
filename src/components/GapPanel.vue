@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { ProjectGap } from '../types'
+import { formatPrice, formatAmount } from '../utils/format'
 
 /** 库存缺口分析面板：纯展示组件，接收 computeGap 的计算结果 */
 defineProps<{ gap: ProjectGap }>()
@@ -49,12 +50,30 @@ defineProps<{ gap: ProjectGap }>()
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="unit" label="单位" width="70" align="center" />
-        <el-table-column prop="requiredQty" label="所需" width="70" align="center" />
-        <el-table-column prop="availableQty" label="可用" width="70" align="center" />
-        <el-table-column label="缺口" width="90" align="center">
+        <el-table-column prop="unit" label="单位" width="60" align="center" />
+        <el-table-column prop="requiredQty" label="所需" width="60" align="center" />
+        <el-table-column prop="availableQty" label="可用" width="60" align="center" />
+        <el-table-column label="缺口" width="70" align="center">
           <template #default="{ row }">
             <span class="gap-missing">{{ row.missingQty }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="购买渠道" min-width="130">
+          <template #default="{ row }">
+            <span v-if="row.supplier">{{ row.supplier }}</span>
+            <span v-else class="muted">—</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="参考单价" width="100" align="center">
+          <template #default="{ row }">
+            <span v-if="row.unitPrice">{{ formatPrice(row.unitPrice) }}/{{ row.unit }}</span>
+            <span v-else class="muted">—</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="预估花费" width="100" align="center">
+          <template #default="{ row }">
+            <span v-if="row.unitPrice">{{ formatAmount(row.missingQty * row.unitPrice) }}</span>
+            <span v-else class="muted">—</span>
           </template>
         </el-table-column>
       </el-table>
