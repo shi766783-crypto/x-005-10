@@ -1,8 +1,12 @@
 <script setup lang="ts">
 import type { ProjectGap } from '../types'
+import { useChannelStore } from '../stores/useChannelStore'
+import { formatMoney } from '../utils/format'
 
 /** 库存缺口分析面板：纯展示组件，接收 computeGap 的计算结果 */
 defineProps<{ gap: ProjectGap }>()
+
+const channelStore = useChannelStore()
 </script>
 
 <template>
@@ -57,6 +61,30 @@ defineProps<{ gap: ProjectGap }>()
             <span class="gap-missing">{{ row.missingQty }}</span>
           </template>
         </el-table-column>
+        <el-table-column label="购买渠道" min-width="140">
+          <template #default="{ row }">
+            <span v-if="channelStore.getChannel(row.channelId)" class="channel-name">
+              {{ channelStore.channelName(row.channelId) }}
+            </span>
+            <span v-else class="muted">未记录</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="参考单价" width="110" align="center">
+          <template #default="{ row }">
+            <span v-if="row.referencePrice !== undefined" class="price">
+              ¥{{ formatMoney(row.referencePrice) }}/{{ row.unit }}
+            </span>
+            <span v-else class="muted">—</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="参考花费" width="100" align="center">
+          <template #default="{ row }">
+            <span v-if="row.referencePrice !== undefined" class="price">
+              ¥{{ formatMoney(row.missingQty * row.referencePrice) }}
+            </span>
+            <span v-else class="muted">—</span>
+          </template>
+        </el-table-column>
       </el-table>
     </template>
   </div>
@@ -70,5 +98,13 @@ defineProps<{ gap: ProjectGap }>()
   font-size: 14px;
   font-weight: 600;
   margin: 12px 0 8px;
+}
+.channel-name {
+  font-weight: 600;
+  color: var(--brand);
+}
+.price {
+  font-weight: 600;
+  color: var(--warning);
 }
 </style>

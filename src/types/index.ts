@@ -20,6 +20,16 @@ export interface Tool {
 // ---------- 材料 ----------
 export type MaterialCategory = '木材' | '五金' | '电子元件' | '涂料' | '胶粘剂' | '其他'
 
+/** 常用购买渠道：独立维护，可被多种材料复用，信息随时可改 */
+export interface PurchaseChannel {
+  id: string
+  name: string // 渠道名称，如：家附近五金店 / 淘宝某店铺
+  contact: string // 联系方式（电话 / 旺旺 / 微信等）
+  address: string // 地址 / 网址等备注
+  createdAt: number
+  updatedAt: number
+}
+
 export interface Material {
   id: string
   name: string
@@ -28,6 +38,8 @@ export interface Material {
   unit: string
   minStock: number // 最低库存预警值
   location: string
+  channelId?: string // 常用购买渠道 id（关联 PurchaseChannel，可空）
+  referencePrice?: number // 参考单价（元 / 单位），可空
   createdAt: number
   updatedAt: number
 }
@@ -119,6 +131,8 @@ export interface MaterialGap {
   missingQty: number
   unit: string
   source: ItemSource
+  channelId?: string // 关联材料库时带出的常用购买渠道
+  referencePrice?: number // 关联材料库时带出的参考单价
 }
 
 export interface ProjectGap {

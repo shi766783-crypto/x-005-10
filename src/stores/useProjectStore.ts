@@ -87,9 +87,16 @@ export function useProjectStore() {
     const materialGaps: MaterialGap[] = project.materials
       .map((item: ProjectMaterialItem) => {
         let available = 0
+        let channelId: string | undefined
+        let referencePrice: number | undefined
         if (item.source === 'library' && item.materialId) {
           const material = materialStore.getMaterial(item.materialId)
-          if (material) available = toNumber(material.quantity)
+          if (material) {
+            available = toNumber(material.quantity)
+            // 从材料库带出常用渠道与参考单价，待采购清单直接可见去哪买、多少钱
+            channelId = material.channelId
+            referencePrice = material.referencePrice
+          }
         }
         const required = toNumber(item.requiredQty)
         return {
@@ -100,6 +107,8 @@ export function useProjectStore() {
           missingQty: Math.max(0, required - available),
           unit: item.unit,
           source: item.source,
+          channelId,
+          referencePrice,
         }
       })
       .filter((g) => g.missingQty > 0)

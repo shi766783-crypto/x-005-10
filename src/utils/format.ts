@@ -30,6 +30,12 @@ export function today(): string {
   return formatDate(Date.now())
 }
 
+/** 金额格式化：保留两位小数并去掉多余的 0，如 12.5、3.00 → 3；无值时返回占位 */
+export function formatMoney(v: unknown): string {
+  const n = toNumber(v)
+  return `${parseFloat(n.toFixed(2))}`
+}
+
 /** 判断是否已逾期：期望归还日期 < 今天且未归还 */
 export function isOverdue(expectedReturnDate: string): boolean {
   return expectedReturnDate < today()

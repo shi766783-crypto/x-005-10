@@ -3,13 +3,15 @@ import { useRouter } from 'vue-router'
 import { useDashboard } from '../composables/useDashboard'
 import { useToolStore } from '../stores/useToolStore'
 import { useBorrowStore } from '../stores/useBorrowStore'
+import { useChannelStore } from '../stores/useChannelStore'
 import StatCard from '../components/StatCard.vue'
-import { today, isOverdue } from '../utils/format'
+import { today, isOverdue, formatMoney } from '../utils/format'
 
 const router = useRouter()
 const { stats, unreturnedBorrows, lowStockMaterials } = useDashboard()
 const toolStore = useToolStore()
 const borrowStore = useBorrowStore()
+const channelStore = useChannelStore()
 
 function toolName(id: string): string {
   return toolStore.getTool(id)?.name ?? '未知工具'
@@ -64,22 +66,40 @@ function goReturn(recordId: string) {
 
       <section class="card">
         <div class="section-head">
-          <span class="section-title">库存预警</span>
+          <span class="section-title">库存预警 · 待补货</span>
           <el-tag v-if="lowStockMaterials.length" type="warning">{{ lowStockMaterials.length }} 种需补货</el-tag>
           <el-tag v-else type="success">库存充足</el-tag>
         </div>
         <el-table v-if="lowStockMaterials.length" :data="lowStockMaterials" size="small">
           <el-table-column prop="name" label="材料" min-width="100" />
-          <el-table-column label="当前库存" width="110" align="center">
+          <el-table-column label="当前库存" width="100" align="center">
             <template #default="{ row }">
               <span class="gap-missing">{{ row.quantity }} {{ row.unit }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="预警值" width="90" align="center">
-            <template #default="{ row }">{{ row.minStock }} {{ row.unit }}</template>
+          <el-table-column label="购买渠道" min-width="130">
+            <template #default="{ row }">
+              <span v-if="channelStore.getChannel(row.channelId)" class="channel-name">
+                {{ channelStore.channelName(row.channelId) }}
+              </span>
+              <span v-else class="muted">未设置</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="参考单价" width="100" align="center">
+            <template #default="{ row }">
+              <span v-if="row.referencePrice !== undefined && row.referencePrice !== null" class="price">
+                ¥{{ formatMoney(row.referencePrice) }}/{{ row.unit }}
+              </span>
+              <span v-else class="muted">—</span>
+            </template>
           </el-table-column>
         </el-table>
         <el-empty v-else description="暂无预警材料" :image-size="60" />
+        <div v-if="lowStockMaterials.length" class="more-link">
+          <el-button type="primary" text @click="router.push({ name: 'materials' })">
+            查看完整补货清单<el-icon class="el-icon--right"><ArrowRight /></el-icon>
+          </el-button>
+        </div>
       </section>
     </div>
 
@@ -140,5 +160,17 @@ function goReturn(recordId: string) {
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
+}
+.channel-name {
+  font-weight: 600;
+  color: var(--brand);
+}
+.price {
+  font-weight: 600;
+  color: var(--warning);
+}
+.more-link {
+  margin-top: 8px;
+  text-align: right;
 }
 </style>

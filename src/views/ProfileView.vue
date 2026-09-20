@@ -7,12 +7,14 @@ import { useProjectStore } from '../stores/useProjectStore'
 import { useBorrowStore } from '../stores/useBorrowStore'
 import { useAchievementStore } from '../stores/useAchievementStore'
 import { STATUS_TAG, DIFFICULTY_TAG } from '../types'
-import { isOverdue } from '../utils/format'
+import { isOverdue, formatMoney } from '../utils/format'
+import { useChannelStore } from '../stores/useChannelStore'
 import AchievementGrid from '../components/AchievementGrid.vue'
 
 const router = useRouter()
 const toolStore = useToolStore()
 const materialStore = useMaterialStore()
+const channelStore = useChannelStore()
 const projectStore = useProjectStore()
 const borrowStore = useBorrowStore()
 const achievementStore = useAchievementStore()
@@ -59,6 +61,22 @@ const activeTab = ref('badges')
           <el-table-column prop="category" label="类别" width="110" />
           <el-table-column label="数量" width="110" align="center">
             <template #default="{ row }">{{ row.quantity }} {{ row.unit }}</template>
+          </el-table-column>
+          <el-table-column label="购买渠道" min-width="140">
+            <template #default="{ row }">
+              <span v-if="channelStore.getChannel(row.channelId)">
+                {{ channelStore.channelName(row.channelId) }}
+              </span>
+              <span v-else class="muted">未设置</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="参考单价" width="110" align="center">
+            <template #default="{ row }">
+              <span v-if="row.referencePrice !== undefined && row.referencePrice !== null">
+                ¥{{ formatMoney(row.referencePrice) }}/{{ row.unit }}
+              </span>
+              <span v-else class="muted">—</span>
+            </template>
           </el-table-column>
         </el-table>
         <el-empty v-if="!materialStore.materials.value.length" description="暂无材料" :image-size="60" />
